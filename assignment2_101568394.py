@@ -93,7 +93,7 @@ class PortScanner(NetworkTool):
         print("PortScanner instance destroyed")
         super().__del__()
 
-    # 
+    #
     #     Q4: What would happen without try-except here?
     """
    While scanning ports, there is no error handling, which could cause the entire program to crash. 
@@ -112,55 +112,69 @@ class PortScanner(NetworkTool):
     #     - Catch socket.error, print error message
 
     def scan_port(self, port):
-        
+
         try:
-            
-            
-        except:
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        """
-                import socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   # Create a TCP socket
-        sock.settimeout(1)                                          # Timeout after 1
-        second
-        result = sock.connect_ex(("127.0.0.1", 80))                 # Try to connect
-        (returns 0 if port is open)
-        if result == 0:
-            print("Port 80 is OPEN")
-        else:
-            print("Port 80 is CLOSED")
-        sock.close()                                                # Always close the
-        socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex((self.target, port))
+
+            if result == 0:
+                status = "Open"
+            else:
+                status = "Closed"
+
+            service_name = "Unknown"
+            for port_number, port_name in common_ports.items():
+                if port_number == port:
+                    service_name = port_name
+                    break
+
+            with self.lock:
+                self.scan_results.append((port, status, service_name))
+
+        except socket.error as error_message:
+            print(f"Error scanning port {port}: {error_message}")
+
+        finally:
+            sock.close()
 
 
+    # - get_open_ports(self):
+    #     - Use list comprehension to return only "Open" results
+    def get_open_ports(self):
+        # open_ports = []
+        # for item in self.scan_results:
+        #     port, status, _ = item
+        #     if status == "Open":
+        #         open_ports.append(port)
 
+        return [item[0] for item in self.scan_results if item[1] == "Open"]
+    #
+    #     Q2: Why do we use threading instead of scanning one port at a time?
+    #     TODO: Your 2-4 sentence answer here... (Part 2, Q2)
+    """
+    We use threading instead of scanning one port at a time because threading allows 
+    multiple ports to be scanned simultaneously rather than sequentially. 
+    This parallel execution significantly reduces the total scanning time, 
+    especially when many ports must be checked.
 
+    """
+    # - scan_range(self, start_port, end_port):
+    #     - Create threads list
+    #     - Create Thread for each port targeting scan_port
+    #     - Start all threads (one loop)
+    #     - Join all threads (separate loop)
+    def scan_range(self, start_port, end_port):
+        threads = []
+        
+        for p in range(start_port, end_port + 1):
+            thread = threading.Thread(target=self.scan_port, args=(p,))
+            threads.append(thread)
 
+            thread.start()
 
-        """
-
-
-#
-# - get_open_ports(self):
-#     - Use list comprehension to return only "Open" results
-#
-#     Q2: Why do we use threading instead of scanning one port at a time?
-#     TODO: Your 2-4 sentence answer here... (Part 2, Q2)
-#
-# - scan_range(self, start_port, end_port):
-#     - Create threads list
-#     - Create Thread for each port targeting scan_port
-#     - Start all threads (one loop)
-#     - Join all threads (separate loop)
+        # another loop here
+        thread.join()
 
 
 # TODO: Create save_results(target, results) function (Step vii)
@@ -183,7 +197,7 @@ class PortScanner(NetworkTool):
 # MAIN PROGRAM
 # ============================================================
 if __name__ == "__main__":
-    pass
+    # pass
     # TODO: Get user input with try-except (Step ix)
     # - Target IP (default "127.0.0.1" if empty)
     # - Start port (1-1024)
@@ -200,6 +214,10 @@ if __name__ == "__main__":
     # - Call save_results()
     # - Ask "Would you like to see past scan history? (yes/no): "
     # - If "yes", call load_past_scans()
+
+    ps = PortScanner("localhost")
+    ps.scan_range(5000, 8085)
+    print(ps.scan_results)
 
 
 # Q5: New Feature Proposal
