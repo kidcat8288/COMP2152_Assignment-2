@@ -72,7 +72,7 @@ class NetworkTool:
 
 
 """
-PortScanner reuses code from NetworkTool through inheritance, allowing it to automatically access 
+PortScanner reuses code from NetworkTool through inheritance, allowing it to automatically access
 all non-private methods and attributes defined in the parent class.
 """
 
@@ -96,10 +96,10 @@ class PortScanner(NetworkTool):
     #
     #     Q4: What would happen without try-except here?
     """
-   While scanning ports, there is no error handling, which could cause the entire program to crash. 
-   If the socket attempts to connect to a port that is closed or filtered by a firewall, the operating system will return an error. 
+   While scanning ports, there is no error handling, which could cause the entire program to crash.
+   If the socket attempts to connect to a port that is closed or filtered by a firewall, the operating system will return an error.
    This failed connection can result in a runtime exception
-    
+
     """
 
     #
@@ -112,7 +112,7 @@ class PortScanner(NetworkTool):
     #     - Catch socket.error, print error message
 
     def scan_port(self, port):
-
+        print(f"Start scanning for {port}...")
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
@@ -137,6 +137,7 @@ class PortScanner(NetworkTool):
 
         finally:
             sock.close()
+            print(f"Finished scanning for {port}")
 
 
     # - get_open_ports(self):
@@ -153,9 +154,9 @@ class PortScanner(NetworkTool):
     #     Q2: Why do we use threading instead of scanning one port at a time?
     #     TODO: Your 2-4 sentence answer here... (Part 2, Q2)
     """
-    We use threading instead of scanning one port at a time because threading allows 
-    multiple ports to be scanned simultaneously rather than sequentially. 
-    This parallel execution significantly reduces the total scanning time, 
+    We use threading instead of scanning one port at a time because threading allows
+    multiple ports to be scanned simultaneously rather than sequentially.
+    This parallel execution significantly reduces the total scanning time,
     especially when many ports must be checked.
 
     """
@@ -166,15 +167,14 @@ class PortScanner(NetworkTool):
     #     - Join all threads (separate loop)
     def scan_range(self, start_port, end_port):
         threads = []
-        
+
         for p in range(start_port, end_port + 1):
             thread = threading.Thread(target=self.scan_port, args=(p,))
             threads.append(thread)
-
             thread.start()
 
-        # another loop here
-        thread.join()
+        for thread in threads:
+            thread.join()
 
 
 # TODO: Create save_results(target, results) function (Step vii)
@@ -183,7 +183,8 @@ class PortScanner(NetworkTool):
 # - INSERT each result with datetime.datetime.now()
 # - Commit, close
 # - Wrap in try-except for sqlite3.Error
-
+def save_results(target,results):
+    pass
 
 # TODO: Create load_past_scans() function (Step viii)
 # - Connect to scan_history.db
@@ -216,7 +217,7 @@ if __name__ == "__main__":
     # - If "yes", call load_past_scans()
 
     ps = PortScanner("localhost")
-    ps.scan_range(5000, 8085)
+    ps.scan_range(5000, 5005)
     print(ps.scan_results)
 
 
