@@ -55,7 +55,8 @@ class NetworkTool:
     @target.setter
     def target(self, value):
         if not value.strip():
-            raise ValueError("target cannot be empty.")
+            # raise ValueError("target cannot be empty.")
+            return
         self._target = value
 
     def __del__(self):
@@ -226,17 +227,51 @@ def save_results(target, results):
 # - Close connection
 
 
+def load_past_scans():
+
+    try:
+        conn = sqlite3.connect("scan_history.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM scans")
+        rows = cursor.fetchall()
+
+        if not rows:
+            print("No past scans found.")
+        else:
+            for _, target, port, status, service, date in rows:
+                print(f"[{date}] {target} : Port {port} ({service}) - {status}")
+
+        conn.close()
+    except sqlite3.Error:
+        print("No past scans found.")
+
+
 # ============================================================
 # MAIN PROGRAM
 # ============================================================
 if __name__ == "__main__":
-    # pass
+
     # TODO: Get user input with try-except (Step ix)
     # - Target IP (default "127.0.0.1" if empty)
     # - Start port (1-1024)
     # - End port (1-1024, >= start port)
     # - Catch ValueError: "Invalid input. Please enter a valid integer."
     # - Range check: "Port must be between 1 and 1024."
+
+    target_ip = input("Enter target IP (default 127.0.0.1): ")
+    if not target_ip:
+        target_ip = "127.0.0.1"
+
+    try:
+        start_port = int(input("Enter start port (1-1024): "))
+        end_port = int(input("Enter end port (1-1024): "))
+        if 1 <= start_port <= 1024 and 1 <= end_port <= 1024:
+            if end_port >= start_port:
+                print("End port must be greater than or equal to start port.")
+        else:
+            print("Port must be between 1 and 1024.")
+    except ValueError:
+        print("Invalid input. Please enter a valid integer.")
 
     # TODO: After valid input (Step x)
     # - Create PortScanner object
@@ -248,17 +283,17 @@ if __name__ == "__main__":
     # - Ask "Would you like to see past scan history? (yes/no): "
     # - If "yes", call load_past_scans()
 
-    target = "localhost"
-    from_port = 5000
-    to_port = 5010
-    ps = PortScanner(target)
+    ps = PortScanner(target_ip)
+    print(f"Scanning: {target_ip} from port{start_port} to {end_port}")
+    ps.scan_range(start_port, end_port)
 
-    print(f"Going to scan: {target} / {from_port} : {to_port}")
-    ps.scan_range(from_port, to_port)
+    print(f"Open ports: {ps.get_open_ports()}")
+    print(f"Total open ports: {len(ps.get_open_ports())}")
 
-    print("Saving results...")
-    print(ps.scan_results)
-    save_results(target, ps.scan_results)
+    save_results(target_ip, ps.scan_results)
+    ask = input("Would you like to see past scan history? (yes/no):")
+    if ask == "yes":
+        load_past_scans()
 
 
 # Q5: New Feature Proposal
