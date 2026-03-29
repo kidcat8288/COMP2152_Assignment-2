@@ -299,3 +299,6 @@ if __name__ == "__main__":
 # Q5: New Feature Proposal
 # TODO: Your 2-3 sentence description here... (Part 2, Q5)
 # Diagram: See diagram_studentID.png in the repository root
+"""I propose a Verified Service Reporter that creates a clean list of only active,
+recognized services. Using list comprehension, the program can instantly filter out all 'Unknown' or 'Closed' ports
+into a single summary, making it easier for a technician to see exactly what software is currently reachable on the network."""
