@@ -12,6 +12,7 @@ import sqlite3
 import os
 import platform
 import datetime
+from contextlib import closing
 import sys
 
 # TODO: Print Python version and OS name (Step iii)
@@ -139,7 +140,6 @@ class PortScanner(NetworkTool):
             sock.close()
             print(f"Finished scanning for {port}")
 
-
     # - get_open_ports(self):
     #     - Use list comprehension to return only "Open" results
     def get_open_ports(self):
@@ -150,6 +150,7 @@ class PortScanner(NetworkTool):
         #         open_ports.append(port)
 
         return [item[0] for item in self.scan_results if item[1] == "Open"]
+
     #
     #     Q2: Why do we use threading instead of scanning one port at a time?
     #     TODO: Your 2-4 sentence answer here... (Part 2, Q2)
@@ -160,6 +161,7 @@ class PortScanner(NetworkTool):
     especially when many ports must be checked.
 
     """
+
     # - scan_range(self, start_port, end_port):
     #     - Create threads list
     #     - Create Thread for each port targeting scan_port
@@ -183,8 +185,38 @@ class PortScanner(NetworkTool):
 # - INSERT each result with datetime.datetime.now()
 # - Commit, close
 # - Wrap in try-except for sqlite3.Error
-def save_results(target,results):
-    pass
+def save_results(target, results):
+    try:
+        conn = sqlite3.connect("scan_history.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                target TEXT,
+                port INTEGER,
+                status TEXT,
+                service TEXT,
+                scan_date TEXT
+            );
+        """
+        )
+        conn.commit()
+        print("`scans` table exists")
+
+        scan_date = str(datetime.datetime.now())
+        for port, status, service in results:
+            with closing(conn.cursor()) as c:
+                sql = """INSERT INTO scans(target, port, status, service, scan_date)values(?,?,?,?,?)"""
+                c.execute(sql, (target, port, status, service, scan_date))
+
+        conn.commit()
+        print(f"Results have been saved: {len(results)} rows")
+    except Exception as e:
+        print(f"ERROR: {e}")
+    finally:
+        conn.close()
+
 
 # TODO: Create load_past_scans() function (Step viii)
 # - Connect to scan_history.db
@@ -216,9 +248,17 @@ if __name__ == "__main__":
     # - Ask "Would you like to see past scan history? (yes/no): "
     # - If "yes", call load_past_scans()
 
-    ps = PortScanner("localhost")
-    ps.scan_range(5000, 5005)
+    target = "localhost"
+    from_port = 5000
+    to_port = 5010
+    ps = PortScanner(target)
+
+    print(f"Going to scan: {target} / {from_port} : {to_port}")
+    ps.scan_range(from_port, to_port)
+
+    print("Saving results...")
     print(ps.scan_results)
+    save_results(target, ps.scan_results)
 
 
 # Q5: New Feature Proposal
